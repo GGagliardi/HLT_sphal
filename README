@@ -17,7 +17,7 @@ The program has two modes.
 
 Mode 1 (testing / no-error HLT)
   Command:
-    ./ax_therm_rate  m/T  s/T  NT  output_path
+    ./HLT_spallate  m/T  s/T  NT  output_path
 
   Description:
     - Reconstructs the regularized delta on a lattice of temporal
@@ -28,7 +28,7 @@ Mode 1 (testing / no-error HLT)
 
 Mode 2 (full analysis, optional error propagation)
   Command:
-    ./ax_therm_rate  m/T  s/T  NT  Nboots  corr_path  output_path  INCLUDE_ERRORS
+    ./HLT_spallate  m/T  s/T  NT  Nboots  corr_path  output_path  INCLUDE_ERRORS
 
   Description:
     - Reconstructs the regularized delta as above (default time window t = 1 .. NT/2).
@@ -76,10 +76,10 @@ Notes
 Examples
 --------
 1) Mode 1 (test run, no-error HLT)
-   ./ax_therm_rate  1.5  1.75  12  output/mT_1.5_sT_1.75_NT_12      (make sure the directory output already exists)
+   ./HLT_spallate  1.5  1.75  12  output/mT_1.5_sT_1.75_NT_12      (make sure the directory output already exists)
 
 2) Mode 2 (full HLT with errors)
-   ./ax_therm_rate  1.5  1.75  12  1000  corr.dat  output/mT_1.5_sT_1.75_NT_12  1   (make sure the directory output already exists)
+   ./HLT_spallate  1.5  1.75  12  1000  corr.dat  output/mT_1.5_sT_1.75_NT_12  1   (make sure the directory output already exists)
 
 3) Mode 2 (disable B[g], no error propagation)
-   ./ax_therm_rate  1.5  1.75  12  1000  corr.dat  output/mT_1.5_sT_1.75_NT_12  0     (make sure the directory output already exists)
+   ./HLT_spallate  1.5  1.75  12  1000  corr.dat  output/mT_1.5_sT_1.75_NT_12  0     (make sure the directory output already exists)
