@@ -1,0 +1,85 @@
+ax_therm_rate - README
+
+Overview
+--------
+This program reconstructs a regularized delta (center = m/T, width = s/T) 
+and performs an HLT stability analysis to obtain the smeared axion
+thermalization rate from lattice correlators.
+
+By default the reconstruction uses all exponentials corresponding to Euclidean times
+t = 1, 2, ..., NT/2 on a lattice with temporal extent NT. 
+This however can be controlled using the variables tmin, tmax contained in ax_therm_rate.cpp  (see below). 
+
+
+Usage
+-----
+The program has two modes.
+
+Mode 1 (testing / no-error HLT)
+  Command:
+    ./ax_therm_rate  m/T  s/T  NT  output_path
+
+  Description:
+    - Reconstructs the regularized delta on a lattice of temporal
+      extent NT (default time window t = 1 .. NT/2).
+    - Runs the HLT-without-errors, i.e. it minimizes only the functional A[g].
+    - Writes all outputs to: output_path.
+
+
+Mode 2 (full analysis, optional error propagation)
+  Command:
+    ./ax_therm_rate  m/T  s/T  NT  Nboots  corr_path  output_path  INCLUDE_ERRORS
+
+  Description:
+    - Reconstructs the regularized delta as above (default time window t = 1 .. NT/2).
+    - Performs the HLT stability analysis to reconstruct the smeared axion
+      thermalization rate.
+    - Writes all outputs to: output_path.
+
+  Arguments:
+    m/T            Center of the regularized delta (in units of temperature).
+    s/T            Width of the regularized delta (in units of temperature).
+    NT             Temporal extent of the lattice.
+    Nboots         Number of bootstrap samples used for the correlator in corr_path.
+    corr_path      Path to the lattice correlator file.
+    output_path    path where to store final results. 
+    INCLUDE_ERRORS Error handling flag:
+                     1 -> full HLT (includes the error term B[g])
+                     0 -> sets B[g] = 0 (no-error variant).
+
+
+Customization
+-------------
+All user-editable code is in: ax_therm_rate.cpp
+
+Inside this file you will find a set of lambda functions that define:
+  - the basis,
+  - the target function to be reconstructed,
+  - related scalar product between elements of the basis, and between elements of the basis and target function.
+
+Modify these lambdas to match your use case (e.g. change the time window,
+basis size, kernels, or target).
+
+Internal numerical precision is set near the top of ax_therm_rate.cpp via:
+  const int prec = ...;
+
+
+Notes
+-----
+- Default time window is t = 1 .. NT/2. If you need a different range,
+  edit the corresponding code in ax_therm_rate.cpp using the variables tmin, tmax
+- Mode 1 is intended for quick tests of kernels/bases.
+- Mode 2 is intended for production use; set INCLUDE_ERRORS = 1 to propagate
+  statistical uncertainties, or 0 to disable the B[g] term.
+
+
+Examples
+--------
+1) Mode 1 (test run, no-error HLT)
+   ./ax_therm_rate  1.5  1.75  12  output/mT_1.5_sT_1.75_NT_12      (make sure the directory output already exists)
+
+2) Mode 2 (full HLT with errors)
+   ./ax_therm_rate  1.5  1.75  12  1000  corr.dat  output/mT_1.5_sT_1.75_NT_12  1   (make sure the directory output already exists)
+
+3) Mode 2 (disable B[g], no error propagation)
+   ./ax_therm_rate  1.5  1.75  12  1000  corr.dat  output/mT_1.5_sT_1.75_NT_12  0     (make sure the directory output already exists)
