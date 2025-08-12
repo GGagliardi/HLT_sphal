@@ -7,7 +7,7 @@ OBJ_1=$(patsubst %.cpp,%.o,$(SOURCES))
 OBJ=$(patsubst src/%, obj/%, $(OBJ_1))
 DEP1= $(patsubst %.cpp,%.d,$(SOURCES))
 DEP=$(patsubst src/%, dep/%, $(DEP1))
-
+$(shell mkdir -p obj)
 dep/%.d: src/%.cpp
 	@set -e; rm -f $@; \
 	$(GCC) -MM $(CPPFLAGS) $< > $@.$$$$; \
