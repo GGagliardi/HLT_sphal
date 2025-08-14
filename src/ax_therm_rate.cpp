@@ -35,7 +35,7 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
   PrecFloat alpha=1.99;  // <f|f> = \int_E0^Emax dx e^alpha*x f^2(x) 
   double Ag_target= 1e-3;  //in the stability analysis it will perform a scan in lambda searching for values of A[g]/A[0] around Ag_target
   double mult= 1e-8; // optimal lambda found from condition A[g]/A[0] = mult*B[g]
-  double mult2 = 1e-9; //systematic error estimated from difference between result obtained using A[g]/A[0]= mult*B[g] and A[g]/A[0] = mul2*B[g] using erf(). 
+  double mult2 = 1e-9; //systematic error estimated from difference between results obtained using A[g]/A[0]= mult*B[g] and A[g]/A[0] = mult2*B[g], via erf(). 
   int tmin=1;
   int tmax= NT/2;  
   double T= 1.0/NT; //temperature in lattice units
