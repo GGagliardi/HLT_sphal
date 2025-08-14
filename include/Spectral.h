@@ -14,7 +14,7 @@ public:
   
  ////////////////////////////////////
 
-  PrecVect g, g_10;
+  PrecVect g, g_2;
   distr_t rho;
   double syst;
 };
@@ -29,9 +29,9 @@ void Get_ft(PrecVect& ft, int tmin, int tmax,  const function<PrecFloat(int)> &f
 
 void Compute_covariance_matrix(PrecMatr &B, int tmin, int tmax, Vfloat &covariance, const distr_t_list &corr);
   
-void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &B,const PrecVect &ft, const PrecFloat & M2, double& lambda_opt, double& lambda_opt_10,  const distr_t_list & corr, int tmin, int tmax,const double mult, double Ag_ov_A0_tg,  string path );
+void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &B,const PrecVect &ft, const PrecFloat & M2, double& lambda_opt, double& lambda_opt_2,  const distr_t_list & corr, int tmin, int tmax,const double mult, double mult2, double Ag_ov_A0_tg,  string path );
 
-CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(int,int)> &Atr_lambda, const function<PrecFloat(int)> &func_f,  Vfloat &covariance, const distr_t_list& corr, double mult, double Ag_ov_A0_tg,  string out_path, bool INCLUDE_ERRORS, int prec);
+CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(int,int)> &Atr_lambda, const function<PrecFloat(int)> &func_f,  Vfloat &covariance, const distr_t_list& corr, double mult, double mult2, double Ag_ov_A0_tg,  string out_path, bool INCLUDE_ERRORS, int prec);
 
 
 #endif

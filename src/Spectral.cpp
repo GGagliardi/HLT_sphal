@@ -69,7 +69,7 @@ void Compute_covariance_matrix(PrecMatr &B, int tmin, int tmax, Vfloat &covarian
 }
 
 
-void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect &ft, const PrecFloat & M2, double& lambda_opt, double& lambda_opt_10,  const distr_t_list & corr, int tmin, int tmax,const double mult, double Ag_ov_A0_tg,  string path ) {
+void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect &ft, const PrecFloat & M2, double& lambda_opt, double& lambda_opt_2,  const distr_t_list & corr, int tmin, int tmax,const double mult, double mult2, double Ag_ov_A0_tg,  string path ) {
 
   bool UseJack= corr.UseJack;
  
@@ -115,13 +115,13 @@ void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect 
   PrecFloat l_start=1.0;
   int Nit=0;
   int Nit_Ag0=0;
-  int Nit_10=0;
+  int Nit_2=0;
   int Nit_100=0;
   double lambda_balance;
-  double lambda_balance_10;
+  double lambda_balance_2;
   double lambda_balance_100;
   bool lambda_balance_found=false;
-  bool lambda_balance_found_10=false;
+  bool lambda_balance_found_2=false;
   PrecFloat Ag_ov_A0_target=1e-3;
   if(Ag_ov_A0_tg > 0) Ag_ov_A0_target= PrecFloat(Ag_ov_A0_tg);
   Vfloat Ags_mult ={10.0, 1.0}; 
@@ -322,18 +322,18 @@ void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect 
   //#############################################################################################################################################
   //#############################################################################################################################################
 
-  double k=0.1;
+  double k=mult2/mult;
   l_low =0.0;
-  if(verbosity_lev) cout<<"Finding lambda from balance condition A="<<to_string_with_precision(k,2)<<"*mult*B, mult= "<<mult<<endl;
+  if(verbosity_lev) cout<<"Finding lambda from balance condition A= mult2*B, mult2= "<<mult2<<endl;
  
  
   //bisection search for condition A = mult*B
-  while( !lambda_balance_found_10 ) {
+  while( !lambda_balance_found_2 ) {
 
    
 
     //evaluate the minimum at midpoint
-    PrecFloat lambda_mid = (Nit_10==0)?l_up:(l_up+l_low)/2;
+    PrecFloat lambda_mid = (Nit_2==0)?l_up:(l_up+l_low)/2;
     PrecMatr C = Atr*(1-lambda_mid)/M2 + Btr*lambda_mid;
     PrecMatr C_inv = C.inverse();
     PrecVect ft_l = ft*(1-lambda_mid)/M2;
@@ -355,14 +355,14 @@ void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect 
       l_up = lambda_mid;
     }
 
-    lambda_balance_10= lambda_mid.get();
+    lambda_balance_2= lambda_mid.get();
       
-    Nit_10++;
-    if(fabs(mult_est - k*mult)/(k*mult) < 0.01) lambda_balance_found_10=true;
+    Nit_2++;
+    if(fabs(mult_est - k*mult)/(k*mult) < 0.01) lambda_balance_found_2=true;
 
       
 
-    if(Nit_10 > MAX_Iters) {
+    if(Nit_2 > MAX_Iters) {
       cout<<"###### FAILED CONVERGENCE #########"<<endl;
       cout<<"###### INFO #######################"<<endl;
       cout<<"-----------------------------"<<endl;
@@ -399,7 +399,7 @@ void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect 
     }
 
     Print_R_at_lambda<<lambda_mid<<" "<<A_val<<" "<<B_val<<" "<<R_E_lambda.ave()<<" "<<R_E_lambda.err();
-    Print_R_at_lambda<<" "<<2*lambda_balance_found_10<<" "<<mult_est<<endl;
+    Print_R_at_lambda<<" "<<2*lambda_balance_found_2<<" "<<mult_est<<endl;
 
     //##########################################################################################
 
@@ -409,7 +409,7 @@ void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect 
   }
 
 
-  if(verbosity_lev) cout<<"lambda_opt_10 = "<<lambda_balance_10<<endl;
+  if(verbosity_lev) cout<<"lambda_opt_2 = "<<lambda_balance_2<<endl;
 
   //#############################################################################################################################################
   //#############################################################################################################################################
@@ -499,7 +499,7 @@ void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect 
 
   
 
-  lambda_opt_10 = lambda_balance_10;
+  lambda_opt_2 = lambda_balance_2;
   lambda_opt =  lambda_balance;
  
   Print_R_at_lambda.close();
@@ -510,7 +510,7 @@ void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect 
 }
 
 
-CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(int,int)> &Atr_lambda, const function<PrecFloat(int)> &func_f,  Vfloat &covariance, const distr_t_list& corr, double mult, double Ag_ov_A0_tg,  string out_path, bool INCLUDE_ERRORS, int prec) {
+CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(int,int)> &Atr_lambda, const function<PrecFloat(int)> &func_f,  Vfloat &covariance, const distr_t_list& corr, double mult, double mult2, double Ag_ov_A0_tg,  string out_path, bool INCLUDE_ERRORS, int prec) {
 
 
   CHLT CC;
@@ -539,8 +539,8 @@ CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(
   if(verbosity_lev) { cout<<"done!"<<endl<<flush;}
   Get_Atr(Atr, tmin, tmax, Atr_lambda );
 
-  PrecMatr Atr_10=Atr;
-  PrecVect ft_10= ft;
+  PrecMatr Atr_2=Atr;
+  PrecVect ft_2= ft;
 
  
   cout.precision(10);
@@ -548,17 +548,17 @@ CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(
   if(INCLUDE_ERRORS) Compute_covariance_matrix(B,tmin,tmax,covariance, corr);
 
   double lambda_opt= INCLUDE_ERRORS?0.9:0.0;
-  double lambda_opt_10=INCLUDE_ERRORS?0.9:0.0;
+  double lambda_opt_2=INCLUDE_ERRORS?0.9:0.0;
 
-  if(INCLUDE_ERRORS)  Get_optimal_lambda(Atr, B,ft, M2, lambda_opt,lambda_opt_10, corr, tmin, tmax,mult, Ag_ov_A0_tg,out_path+".stab_analysis");
+  if(INCLUDE_ERRORS)  Get_optimal_lambda(Atr, B,ft, M2, lambda_opt,lambda_opt_2, corr, tmin, tmax,mult, mult2, Ag_ov_A0_tg,out_path+".stab_analysis");
  
 
   if(verbosity_lev>=2) cout<<"Stability analysis completed!"<<endl;
     							         
   if(INCLUDE_ERRORS) {
-    Atr_10 = Atr*(1-lambda_opt_10)/M2 + B*lambda_opt_10;
+    Atr_2 = Atr*(1-lambda_opt_2)/M2 + B*lambda_opt_2;
     Atr = Atr*(1-lambda_opt)/M2 + B*lambda_opt;
-    ft_10 = ft*(1-lambda_opt_10)/M2;
+    ft_2 = ft*(1-lambda_opt_2)/M2;
     ft= ft*(1-lambda_opt)/M2;
   }
 
@@ -566,34 +566,34 @@ CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(
   //invert Atr
 
   const PrecMatr Atr_inv = Atr.inverse();
-  const PrecMatr Atr_inv_10= Atr_10.inverse();
+  const PrecMatr Atr_inv_2= Atr_2.inverse();
 
   
   //get g(t) 
   
 
   PrecVect g = Atr_inv*ft;
-  PrecVect g_10= Atr_inv_10*ft_10;
+  PrecVect g_2= Atr_inv_2*ft_2;
 
   CC.g = g;
-  CC.g_10 = g_10;
+  CC.g_2 = g_2;
 
   //compute rho
 
   distr_t rho = 0.0*Get_id_distr(Njacks,UseJack);
-  distr_t rho_10 = 0.0*Get_id_distr(Njacks,UseJack);
+  distr_t rho_2 = 0.0*Get_id_distr(Njacks,UseJack);
   
   for(int ijack=0; ijack< Njacks; ijack++) {
 
     for(int t=tmin;t<=tmax;t++)  {
       rho = rho + g(t-tmin).get()*corr.distr_list[t];
-      rho_10 = rho_10 + g_10(t-tmin).get()*corr.distr_list[t];
+      rho_2 = rho_2 + g_2(t-tmin).get()*corr.distr_list[t];
       }
   }
 
   CC.rho = rho;
 
-  if(INCLUDE_ERRORS) CC.syst = erf(fabs( (rho - rho_10).ave()/(sqrt(2)*rho_10.err())))*fabs( (rho - rho_10).ave());
+  if(INCLUDE_ERRORS) CC.syst = erf(fabs( (rho - rho_2).ave()/(sqrt(2)*rho_2.err())))*fabs( (rho - rho_2).ave());
 
   return CC;
 
