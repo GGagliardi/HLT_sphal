@@ -8,7 +8,7 @@
 
 using namespace std;
 
-void get_axion_therm_rate(double m, double sigma, int T, int Nboots, const distr_t_list& C, string out_path, int INCLUDE_ERRORS);
+void get_axion_therm_rate(double m, double sigma, int T, int Nboots, distr_t_list& C, string out_path, int INCLUDE_ERRORS);
 
 
 #endif

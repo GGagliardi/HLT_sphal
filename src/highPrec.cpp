@@ -132,7 +132,7 @@ PrecFloat safe_1m_expmx_ov_x(PrecFloat x) {
   
   if(x==0) return PrecFloat(1.0);
   
-  if( abs(x) < PrecFloat(1e-5) ) {
+  if( abs(x) < PrecFloat(1e-4) ) {
     int n=2;
     PrecFloat add= 1;
     bool converged=false;
