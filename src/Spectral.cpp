@@ -68,6 +68,185 @@ void Compute_covariance_matrix(PrecMatr &B, int tmin, int tmax, Vfloat &covarian
   return;
 }
 
+void automated_plateaux_search(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect &ft, const PrecFloat & M2, double& lambda_opt, double& lambda_opt_2, double &ch2_ret,  const distr_t_list & corr, int tmin, int tmax, string path ) {
+
+  bool UseJack= corr.UseJack;
+
+  ofstream Print_R_at_lambda(path);
+
+  //Print header
+  Print_R_at_lambda<<"# $1=lambda,  $2= A[g]/A[0], $3=B[g], $4= val, $5=err, $6=S_FLAG $7=mult"<<endl; 
+  
+  Print_R_at_lambda.precision(10);
+    
+  if(verbosity_lev) cout<<"Automated plateaux search ..."<<flush;
+
+  double r= 0.7; //0.5;
+  int Npoints= 36; //18;
+  double As=0.3;
+  Vfloat Ags;
+  vector<PrecFloat> lambdas;
+  vector<PrecFloat> A_tofit;
+  vector<PrecFloat> B_tofit;
+  vector<distr_t> R_tofit;
+  for(int i=0;i<Npoints;i++) Ags.push_back( As*pow(r,i));
+
+  const auto A=
+    [&M2, &Atr, &ft](const PrecVect& gmin) -> PrecFloat
+    {
+      PrecVect Atr_g = Atr*gmin;
+      PrecFloat g_Atr_g = gmin.transpose()*Atr_g;
+      PrecFloat ft_g = ft.transpose()*gmin;
+      return (M2 + g_Atr_g -2*ft_g)/M2  ;
+    };
+
+  const auto B=
+    [&Btr](const PrecVect& gmin) -> PrecFloat
+    {
+      PrecVect B_g = Btr*gmin;
+      PrecFloat g_B_g = gmin.transpose()*B_g;
+      return g_B_g ;
+    };
+
+  
+  
+  bool JUST_STARTED=true;
+  PrecFloat l_start=1;
+  PrecFloat l_low =0;
+  PrecFloat l_up = 1;
+  int Nit_Ag0=0;
+  
+  for(auto & Ag_T: Ags) {
+
+    
+    bool lambda_found_Ag_A0=false;
+    Nit_Ag0=0;
+    l_low=0;
+    
+    //bisection search for given A[g]/A[0]
+    while( !lambda_found_Ag_A0 ) {
+
+     
+      PrecFloat lambda_mid  =  (Nit_Ag0==0 && JUST_STARTED)?l_start:(l_up+l_low)/2;
+      PrecMatr C = Atr*(1-lambda_mid)/M2 + Btr*lambda_mid;
+      PrecMatr C_inv = C.inverse();
+      PrecVect ft_l = ft*(1-lambda_mid)/M2;
+      PrecVect gm = C_inv*ft_l;
+
+      
+      PrecFloat A_val = A(gm);
+      PrecFloat B_val = B(gm);
+      PrecFloat W_val = (1-lambda_mid)*A_val + lambda_mid*B_val;
+      
+      
+      cout.precision(10);
+
+      if(A_val > Ag_T) { // lambda_mid is new l_low
+	l_up =lambda_mid;
+      }
+      else { //lambda_mid is new l_up
+	l_low = lambda_mid;
+      }
+
+      
+      
+      Nit_Ag0++;
+      if( (A_val > 0.95*Ag_T && A_val < 1.05*Ag_T)) lambda_found_Ag_A0=true;
+
+
+      //##########################################################################################
+      //compute anti-Laplace transform corresponding to lambda_mid:
+      distr_t R_E_lambda(UseJack);
+      
+      for(int ijack=0; ijack< corr.distr_list[1].size(); ijack++) {
+
+	PrecFloat spec_lambda_d_jack=0;
+
+	for(int t=tmin;t<=tmax;t++) spec_lambda_d_jack = spec_lambda_d_jack + gm(t-tmin)*corr.distr_list[t].distr[ijack]; 
+
+	R_E_lambda.distr.push_back( spec_lambda_d_jack.get());
+      }
+
+      PrecFloat mult_est = A_val/B_val;
+
+
+      //cout<<"A: "<<A_val<<endl<<"lambda: "<<lambda_mid<<endl<<flush;
+     
+      Print_R_at_lambda<<lambda_mid<<" "<<A_val<<" "<<B_val<<" "<<R_E_lambda.ave()<<" "<<R_E_lambda.err();
+      Print_R_at_lambda<<" "<<lambda_found_Ag_A0<<" "<<mult_est<<endl;
+
+      //##########################################################################################
+
+      if(lambda_found_Ag_A0) {  lambdas.push_back( lambda_mid) ; R_tofit.push_back(R_E_lambda); A_tofit.push_back(A_val); B_tofit.push_back(B_val); }
+
+     
+    }
+    JUST_STARTED=false;
+  }
+
+  
+
+  //we can now find the interval where ch2/dof is O(1)
+  int Npoints_fit = 7; //must be and odd number
+  assert( (Npoints_fit%2) != 0);
+  assert(Npoints_fit < Npoints);
+  int fit_start=0;
+  bool found_interval=false;
+  double ch2_thresh=1;
+
+  auto constant_fit = [&Npoints_fit](const vector<distr_t> &A ) -> distr_t {
+    int N= A.size();
+    assert(N==Npoints_fit);
+    double tot_w=0;
+    distr_t ret = 0.0*A[0];
+    for(int i=0;i<N;i++) { tot_w += 1.0/pow(A[i].err(),2); ret = ret + A[i]/pow(A[i].err(),2); }
+    return ret/tot_w;
+  };
+
+  auto ch2_func = [&Npoints_fit](const vector<distr_t> &A,const distr_t &res) -> double {
+    int N=A.size();
+    assert(N==Npoints_fit);
+    double ch2=0;
+    for(int i=0;i<N;i++) ch2 += pow( (A[i].ave() - res.ave())/A[i].err(),2);
+    return ch2;
+  };
+  
+  while(!found_interval) {
+
+    vector<distr_t> R;
+    
+    for(int ip=0;ip<Npoints_fit;ip++) R.push_back( R_tofit[fit_start+ip]);
+    if( ch2_func(R, constant_fit(R))/4 < ch2_thresh )   found_interval=true;
+    if(!found_interval) fit_start++;
+    if( (fit_start >= ((signed)R_tofit.size() - Npoints_fit +1)) && !found_interval) { fit_start= 0; ch2_thresh += 0.5; }
+  }
+
+  int id_lambda= fit_start + Npoints_fit/2;
+  int id_lambda2 = fit_start + Npoints_fit -1;
+
+  
+  lambda_opt=lambdas[id_lambda].get();
+  lambda_opt_2 = lambdas[id_lambda2].get();
+  ch2_ret=ch2_thresh;
+
+  //print reconstruction corresponding to lambda and lambda2
+
+  //lambda
+  Print_R_at_lambda<<lambda_opt<<" "<<A_tofit[id_lambda]<<" "<<B_tofit[id_lambda]<<" "<<R_tofit[id_lambda].ave()<<" "<<R_tofit[id_lambda].err();
+  Print_R_at_lambda<<" "<<2<<" "<<A_tofit[id_lambda]/B_tofit[id_lambda]<<endl;
+  //lambda2
+  Print_R_at_lambda<<lambda_opt_2<<" "<<A_tofit[id_lambda2]<<" "<<B_tofit[id_lambda2]<<" "<<R_tofit[id_lambda2].ave()<<" "<<R_tofit[id_lambda2].err();
+  Print_R_at_lambda<<" "<<3<<" "<<A_tofit[id_lambda2]/B_tofit[id_lambda2]<<endl;
+
+
+  Print_R_at_lambda.close();
+
+  cout<<"done!"<<endl<<flush;
+  
+  return;
+
+}
+
 
 void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect &ft, const PrecFloat & M2, double& lambda_opt, double& lambda_opt_2,  const distr_t_list & corr, int tmin, int tmax,const double mult, double mult2, double Ag_ov_A0_tg,  string path ) {
 
@@ -510,13 +689,15 @@ void Get_optimal_lambda(const PrecMatr &Atr, const PrecMatr &Btr,const PrecVect 
 }
 
 
-CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(int,int)> &Atr_lambda, const function<PrecFloat(int)> &func_f,  Vfloat &covariance, const distr_t_list& corr, double mult, double mult2, double Ag_ov_A0_tg,  string out_path, bool INCLUDE_ERRORS, int prec) {
+CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(int,int)> &Atr_lambda, const function<PrecFloat(int)> &func_f,  Vfloat &covariance, const distr_t_list& corr, double mult, double mult2, double Ag_ov_A0_tg,  string out_path, bool INCLUDE_ERRORS, int prec, string AUTO) {
 
 
   CHLT CC;
 
+  double ch2=0.0;
 
-  cout<<"precision used: "<<prec<<endl;
+
+  cout<<"precision used: "<<prec<<endl<<flush;
 
   
   bool UseJack= corr.distr_list[0].UseJack;
@@ -550,8 +731,10 @@ CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(
   double lambda_opt= INCLUDE_ERRORS?0.9:0.0;
   double lambda_opt_2=INCLUDE_ERRORS?0.9:0.0;
 
-  if(INCLUDE_ERRORS)  Get_optimal_lambda(Atr, B,ft, M2, lambda_opt,lambda_opt_2, corr, tmin, tmax,mult, mult2, Ag_ov_A0_tg,out_path+".stab_analysis");
- 
+  if(INCLUDE_ERRORS) {
+    if(AUTO == "AUTO") automated_plateaux_search(Atr, B,ft, M2, lambda_opt,lambda_opt_2,ch2, corr, tmin, tmax,out_path+"auto_search.dat");
+    else Get_optimal_lambda(Atr, B,ft, M2, lambda_opt,lambda_opt_2, corr, tmin, tmax,mult, mult2, Ag_ov_A0_tg,out_path+"stab_analysis.dat");
+  }
 
   if(verbosity_lev>=2) cout<<"Stability analysis completed!"<<endl;
     							         
@@ -593,7 +776,10 @@ CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(
 
   CC.rho = rho;
 
-  if(INCLUDE_ERRORS) CC.syst = erf(fabs( (rho - rho_2).ave()/(sqrt(2)*rho_2.err())))*fabs( (rho - rho_2).ave());
+  if(INCLUDE_ERRORS)  {
+    CC.syst = erf(fabs( (rho - rho_2).ave()/(sqrt(2)*rho_2.err())))*fabs( (rho - rho_2).ave());
+    if(ch2 > 1.0) CC.syst = sqrt( pow(CC.syst,2) + ch2);
+  }
 
   return CC;
 

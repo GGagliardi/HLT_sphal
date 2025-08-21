@@ -2,7 +2,7 @@
 
 using namespace std;
 
-const int prec = 2*256;  //double precision in this scale is 52
+const int prec = 2*128;  //double precision in this scale is 52
 
 
 void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_list &C, string out_path, int INCLUDE_ERRORS) {
@@ -31,7 +31,7 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
   //##########################################//
   //       SET  HLT PARAMETERS         //
   double E0=0.0;
-  double Emax= 3.0;   // minimizes the norm in the interval [E0, Emax]. If Emax < E0 the interval becomes [E0,\infty]
+  double Emax= 2.0;   // minimizes the norm in the interval [E0, Emax]. If Emax < E0 the interval becomes [E0,\infty]
   PrecFloat alpha=1.99;  // <f|f> = \int_E0^Emax dx e^alpha*x f^2(x) 
   double Ag_target= 1e-3;  //in the stability analysis it will perform a scan in lambda searching for values of A[g]/A[0] around Ag_target
   double mult= 1e-8; // optimal lambda found from condition A[g]/A[0] = mult*B[g]
@@ -44,14 +44,15 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
   //##########################################//
 
   cout<<"Printing info: "<<endl;
-  cout<<"[tmin,tmax]:  ["<<tmin<<","<<tmax<<endl;
+  cout<<"[tmin,tmax]:  ["<<tmin<<","<<tmax<<"]"<<endl;
   cout<<"s/T: "<<s_T<<" as: "<<s<<endl;
   cout<<"m/T: "<<m_T<<" am: "<<m<<endl;
-  cout<<"[E0,Emax]: ["<<E0<<","<<Emax<<"] alpha: "<<alpha<<endl;
+  if(Emax > E0) { cout<<"[E0,Emax]: ["<<E0<<","<<Emax<<"], alpha: "<<alpha<<endl;}
+  else { cout<<"[E0,Emax]: ["<<E0<<",+inf], alpha: "<<alpha<<endl; }
   cout<<"NT: "<<NT<<endl;
   cout<<"Nboots: "<<Nboots<<endl;
   cout<<"INCLUDE ERRORS: "<<INCLUDE_ERRORS<<endl;
- 
+						    
  
 
 
@@ -66,16 +67,18 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
   // at m/T=0 (sphaleron rate) the basis used is B(n,E) = (1/2*PI)*E*NT*cosh( E*( n - NT/2))/sinh(E*NT/2)  indicated with [1] below
    
   auto Bn = [&](int n, PrecFloat E) -> PrecFloat {
-    //return (1.0/(2.0*PI))*exp(-E*n)*(1.0+ exp(-E*(NT-2.0*n)))/safe_1m_expmx_ov_x(E*NT);   [1]
+    return (1.0/(2.0*PI))*exp(-E*n)*(1.0+ exp(-E*(NT-2.0*n)))/safe_1m_expmx_ov_x(E*NT);  // [1]
     //return (1.0/(2.0*PI))*exp(-E*n)*(1+ exp(-E*(NT-2*n)))*E*NT/(1-exp(-E*NT));
-    return (1.0/(2.0*PI))*(exp(-E*n) + exp(-E*(NT-n)));                              // cosh(x*(n-NT/2))*e^-x*NT/2
+    //return (1.0/(2.0*PI))*(exp(-E*n) + exp(-E*(NT-n)));                              // cosh(x*(n-NT/2))*e^-x*NT/2
   };
 
+ 
   //set the function G we want to approximate
   auto G = [&](PrecFloat E) -> PrecFloat {
     PrecFloat x = (E-m)/s;
-    return (1.0/s_T)*pow(2/PI,2)/safe_sinhx_ov_x(x);   //[ x/sinhx  ]
-    //return (1.0/(s_T*sqrt(2*PI)))*exp( -x*x/2);      //[ gaussian ]
+    //return (1.0/(s_T))*( 1.0/(1.0 + exp(-(x+1)))  - 1.0/(1.0 + exp(-(x-1)) )); // [f(x) = th(x+1)-th(x-1) ; ]    th(x) = 1/(1+exp(-x)); 
+    return (1.0/s_T)*pow(2/PI,2)/safe_sinhx_ov_x(x);  // [f(x) =  x/sinhx  ]
+    //return (1.0/(s_T*sqrt(2*PI)))*exp( -x*x/2);      //[f(x) =  gaussian ]
   };
 
   // G*G
@@ -100,6 +103,7 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
     return   (Emax > E0)?integrateUpToXmax(func, E0,Emax, false):integrateUpToInfinite(func,E0,false);   //called with true sets verbosity level to 1
   };
 
+ 
   //M2 = || G ||^2  
   PrecFloat M2 =  (Emax > E0)?integrateUpToXmax(G2, E0,Emax, false):integrateUpToInfinite(G2,E0,false);   //called with true sets verbosity level to 1
 
@@ -108,13 +112,13 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
   //######################################################################
   //######################################################################
 
-  
-  
+   
   //Do HLT analysis
   CHLT ax_therm_rate =  Get_INVLT(tmin,tmax, M2, Atr, ft,  Cov, C, mult, mult2,  Ag_target, out_path, INCLUDE_ERRORS, prec);  //in this example tmin = 1 , tmax = NT/2
   
 
 
+  
   //print bootstrap samples of the smeared axion therm rate
 
   ofstream print_res(out_path+".res");

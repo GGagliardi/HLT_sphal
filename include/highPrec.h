@@ -570,9 +570,9 @@ PrecFloat integrateUpToInfinite(F&& f,const double& xMin=0.0,const int& verbose=
 
 	
 	if(verbose) {
-	  cout<<"##########"<<endl;
-	  cout<<"t: "<<t<<" s: "<<sinh(t)<<" x: "<<x<<endl;
-	  cout<<"x: "<<x<<" f(x): "<<fx<<", jac(x): "<<jac<<endl;
+	  //cout<<"##########"<<endl;
+	  //cout<<"t: "<<t<<" s: "<<sinh(t)<<" x: "<<x<<endl;
+	  //cout<<"x: "<<x<<" f(x): "<<fx<<", jac(x): "<<jac<<endl;
 	}
 	
 	
@@ -624,7 +624,7 @@ PrecFloat integrateUpToInfinite(F&& f,const double& xMin=0.0,const int& verbose=
 	      
 	      converged= ( abs(contr*step/(sum)) < PrecFloat(0.1)*PrecFloat::getEpsilon());
 	      //converged = (sum==newSum);
-	      
+	      /*
 	      if(verbose) {
 		cout<<"RESTART: "<<COUNT_RESTART<<" t: "<<t<<" step: "<<step<<" contr: "<<contr<<" t>extreme: "<<(t>extreme)<<" extreme: "<<extreme<<" converged: "<<converged<<endl<<flush;
 		cout<<"LOOPING: sum: "<<newSum<<" precSum: "<<sum<<endl<<flush;
@@ -632,7 +632,7 @@ PrecFloat integrateUpToInfinite(F&& f,const double& xMin=0.0,const int& verbose=
 		cout<<"LOOPING(x2 prec): sum: "<<newSum<<" precSum: "<<sum<<endl<<flush;
 		cout.precision( numDigits);
 	      }
-	      
+	      */
 		  
 	
 	  
