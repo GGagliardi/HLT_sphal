@@ -732,8 +732,8 @@ CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(
   double lambda_opt_2=INCLUDE_ERRORS?0.9:0.0;
 
   if(INCLUDE_ERRORS) {
-    if(AUTO == "AUTO") automated_plateaux_search(Atr, B,ft, M2, lambda_opt,lambda_opt_2,ch2, corr, tmin, tmax,out_path+"auto_search.dat");
-    else Get_optimal_lambda(Atr, B,ft, M2, lambda_opt,lambda_opt_2, corr, tmin, tmax,mult, mult2, Ag_ov_A0_tg,out_path+"stab_analysis.dat");
+    if(AUTO == "AUTO") automated_plateaux_search(Atr, B,ft, M2, lambda_opt,lambda_opt_2,ch2, corr, tmin, tmax,out_path+".auto_search");
+    else Get_optimal_lambda(Atr, B,ft, M2, lambda_opt,lambda_opt_2, corr, tmin, tmax,mult, mult2, Ag_ov_A0_tg,out_path+".stab_analysis");
   }
 
   if(verbosity_lev>=2) cout<<"Stability analysis completed!"<<endl;
