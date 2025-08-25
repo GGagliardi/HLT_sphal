@@ -766,14 +766,11 @@ CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(
   distr_t rho = 0.0*Get_id_distr(Njacks,UseJack);
   distr_t rho_2 = 0.0*Get_id_distr(Njacks,UseJack);
   
-  for(int ijack=0; ijack< Njacks; ijack++) {
-
-    for(int t=tmin;t<=tmax;t++)  {
-      rho = rho + g(t-tmin).get()*corr.distr_list[t];
-      rho_2 = rho_2 + g_2(t-tmin).get()*corr.distr_list[t];
-      }
+  for(int t=tmin;t<=tmax;t++)  {
+    rho = rho + g(t-tmin).get()*corr.distr_list[t];
+    rho_2 = rho_2 + g_2(t-tmin).get()*corr.distr_list[t];
   }
-
+  
   CC.rho = rho;
 
   if(INCLUDE_ERRORS)  {

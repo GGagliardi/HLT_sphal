@@ -65,6 +65,12 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
 
   // B(n,E) is the basis function to be used. The standard one used at zero-temperature is B(n,E) = exp(-nE);
   // at m/T=0 (sphaleron rate) the basis used is B(n,E) = (1/2*PI)*E*NT*cosh( E*( n - NT/2))/sinh(E*NT/2)  indicated with [1] below
+
+  //weight function w. It defines the norm in functional space to be used: ||f||^2 = \int_Emin^Emax dE  w(E) f(E)^2
+  auto w =[&](PrecFloat E) -> PrecFloat {
+
+    return exp(alpha*E); 
+  };
    
   auto Bn = [&](int n, PrecFloat E) -> PrecFloat {
     return (1.0/(2.0*PI))*exp(-E*n)*(1.0+ exp(-E*(NT-2.0*n)))/safe_1m_expmx_ov_x(E*NT);  // [1]
@@ -76,20 +82,19 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
   //set the function G we want to approximate
   auto G = [&](PrecFloat E) -> PrecFloat {
     PrecFloat x = (E-m)/s;
-    //return (1.0/(s_T))*( 1.0/(1.0 + exp(-(x+1)))  - 1.0/(1.0 + exp(-(x-1)) )); // [f(x) = th(x+1)-th(x-1) ; ]    th(x) = 1/(1+exp(-x)); 
     return (1.0/s_T)*pow(2/PI,2)/safe_sinhx_ov_x(x);  // [f(x) =  x/sinhx  ]
     //return (1.0/(s_T*sqrt(2*PI)))*exp( -x*x/2);      //[f(x) =  gaussian ]
   };
 
   // G*G
   auto G2 = [&](PrecFloat E) -> PrecFloat {
-    return G(E)*G(E)*exp(alpha*E);
+    return G(E)*G(E)*w(E);
   };
 
   // Atr(n1,n2) = < B(n1) | B(n2) >
   auto Atr = [&](int n1, int n2) -> PrecFloat {
     auto func = [&](PrecFloat E) -> PrecFloat {
-      return Bn(n1,E)*Bn(n2,E)*exp(alpha*E);
+      return Bn(n1,E)*Bn(n2,E)*w(E);
     };
     return  (Emax > E0)?integrateUpToXmax(func, E0,Emax, false):integrateUpToInfinite(func,E0,false);   //called with true sets verbosity level to 1
   };
@@ -97,7 +102,7 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
   // ft(n) = < B(n) | G > ,  where G is the function we want to approximate
   auto ft = [&](int n) -> PrecFloat {
     auto func = [&](PrecFloat E) -> PrecFloat {
-      PrecFloat ret= Bn(n,E)*G(E)*exp(alpha*E);
+      PrecFloat ret= Bn(n,E)*G(E)*w(E);
       return ret;
     };
     return   (Emax > E0)?integrateUpToXmax(func, E0,Emax, false):integrateUpToInfinite(func,E0,false);   //called with true sets verbosity level to 1
