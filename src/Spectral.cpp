@@ -774,8 +774,14 @@ CHLT Get_INVLT(int tmin, int tmax, const PrecFloat M2, const function<PrecFloat(
   CC.rho = rho;
 
   if(INCLUDE_ERRORS)  {
-    CC.syst = erf(fabs( (rho - rho_2).ave()/(sqrt(2)*rho_2.err())))*fabs( (rho - rho_2).ave());
-    if(ch2 > 1.0) CC.syst = sqrt( pow(CC.syst,2) + ch2);
+
+    if(ch2 <= 1.0) CC.syst = erf(fabs( (rho - rho_2).ave()/(sqrt(2)*rho_2.err())))*fabs( (rho - rho_2).ave());
+    else {
+      CC.syst = erf(fabs( (rho - rho_2).ave()/(sqrt(2*ch2)*rho_2.err())))*fabs( (rho - rho_2).ave());
+      double x= pow(CC.rho.err(),2)*(ch2-1.0); 
+      CC.syst = sqrt( pow(CC.syst,2) + x);
+      
+    }
   }
 
   return CC;
