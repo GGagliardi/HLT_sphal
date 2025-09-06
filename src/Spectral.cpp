@@ -2,6 +2,7 @@
 #include "highPrec.h"
 
 const int verbosity_lev=1;
+const bool DEACTIVATE_FULL_COV=true;
 
 
 using namespace std;
@@ -60,6 +61,7 @@ void Compute_covariance_matrix(PrecMatr &B, int tmin, int tmax, Vfloat &covarian
       
 	B(t-tmin,r-tmin) = covariance[t*corr.size()+ r];
 	B(r-tmin, t-tmin) = B(t-tmin,r-tmin);
+	if(r != t && DEACTIVATE_FULL_COV) { B(t-tmin,r-tmin) = 0; B(r-tmin,t-tmin) = 0; }
     }
   }
 
@@ -81,16 +83,7 @@ void automated_plateaux_search(const PrecMatr &Atr, const PrecMatr &Btr,const Pr
     
   if(verbosity_lev) cout<<"Automated plateaux search ..."<<flush;
 
-  double r= 0.7; //0.5;
-  int Npoints= 36; //18;
-  double As=0.3;
-  Vfloat Ags;
-  vector<PrecFloat> lambdas;
-  vector<PrecFloat> A_tofit;
-  vector<PrecFloat> B_tofit;
-  vector<distr_t> R_tofit;
-  for(int i=0;i<Npoints;i++) Ags.push_back( As*pow(r,i));
-
+ 
   const auto A=
     [&M2, &Atr, &ft](const PrecVect& gmin) -> PrecFloat
     {
@@ -108,7 +101,24 @@ void automated_plateaux_search(const PrecMatr &Atr, const PrecMatr &Btr,const Pr
       return g_B_g ;
     };
 
-  
+
+  double r= 0.7; //0.5;
+  //compute minimum possible A[g]/A[0]
+  PrecMatr C_min = Atr/M2;
+  PrecMatr C_inv_min = C_min.inverse();
+  PrecVect ft_l_min = ft/M2;
+  PrecVect gm_min = C_inv_min*ft_l_min;     
+  PrecFloat A_val_min = A(gm_min);
+  int Npoints= 36;
+  double As=0.3;
+  int Npoints_max =  (int)(  (log(A_val_min.get()) - log(As))/log(r) + 1 );
+  Npoints = min(36, Npoints_max);
+  Vfloat Ags;
+  vector<PrecFloat> lambdas;
+  vector<PrecFloat> A_tofit;
+  vector<PrecFloat> B_tofit;
+  vector<distr_t> R_tofit;
+  for(int i=0;i<Npoints;i++) Ags.push_back( As*pow(r,i));  
   
   bool JUST_STARTED=true;
   PrecFloat l_start=1;

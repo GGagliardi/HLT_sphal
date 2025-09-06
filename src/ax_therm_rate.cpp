@@ -26,16 +26,16 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
   else  INCLUDE_ERRORS=0;
 
   
-  
+ 
 
   //##########################################//
   //       SET  HLT PARAMETERS         //
   double E0=0.0;
-  double Emax= 2.0;   // minimizes the norm in the interval [E0, Emax]. If Emax < E0 the interval becomes [E0,\infty]
+  double Emax= -1.0;   // minimizes the norm in the interval [E0, Emax]. If Emax < E0 the interval becomes [E0,\infty]
   PrecFloat alpha=1.99;  // <f|f> = \int_E0^Emax dx e^alpha*x f^2(x) 
   double Ag_target= 1e-3;  //in the stability analysis it will perform a scan in lambda searching for values of A[g]/A[0] around Ag_target
-  double mult= 1e-8; // optimal lambda found from condition A[g]/A[0] = mult*B[g]
-  double mult2 = 1e-9; //systematic error estimated from difference between results obtained using A[g]/A[0]= mult*B[g] and A[g]/A[0] = mult2*B[g], via erf(). 
+  double mult2= 0.00087*pow(NT*NT/(2.0*M_PI),2); // optimal lambda found from condition A[g]/A[0] = mult*B[g]
+  double mult = 0.015*pow(NT*NT/(2.0*M_PI),2); //systematic error estimated from difference between results obtained using A[g]/A[0]= mult*B[g] and A[g]/A[0] = mult2*B[g], via erf(). 
   int tmin=1;
   int tmax= NT/2;  
   double T= 1.0/NT; //temperature in lattice units
@@ -119,7 +119,7 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
 
    
   //Do HLT analysis
-  CHLT ax_therm_rate =  Get_INVLT(tmin,tmax, M2, Atr, ft,  Cov, C, mult, mult2,  Ag_target, out_path, INCLUDE_ERRORS, prec);  //in this example tmin = 1 , tmax = NT/2
+  CHLT ax_therm_rate =  Get_INVLT(tmin,tmax, M2, Atr, ft,  Cov, C, mult, mult2,  Ag_target, out_path, INCLUDE_ERRORS, prec, "AUTO");  //in this example tmin = 1 , tmax = NT/2
   
 
 

@@ -27,7 +27,7 @@ int main(int narg, char** argv)
     int NThalf_p1= NT/2+1 ;
      
 
-
+    //system(("mkdir -p "+out_path).c_str());
 
   
     //read correlator
