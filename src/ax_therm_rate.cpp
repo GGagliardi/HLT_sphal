@@ -154,6 +154,9 @@ void get_axion_therm_rate(double m_T, double s_T, int NT, int Nboots,distr_t_lis
   }
 
   Print_To_File({} , {Erg, Reco, Exact} , out_path+".reco", "", "");
+  ofstream print_g(out_path+".g");
+  for(int t=tmin;t<=tmax;t++) print_g<<t<<" "<<ax_therm_rate.g(t-tmin)<<endl;
+  print_g.close();
   
 
 
